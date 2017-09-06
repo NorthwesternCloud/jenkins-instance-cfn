@@ -19,9 +19,9 @@ Parameters:
     Default: ami-10547475
 
   InstanceProfile:
-    Description: The ARN of the IAM role (instance profile) to assign to the instance. Defaults to the jenkins-admin role in the shared services account.
+    Description: The name of the IAM role (instance profile) to assign to the instance. Defaults to the jenkins-admin role in the shared services account.
     Type: String
-    Default: arn:aws:iam::416811316833:role/jenkins-admin
+    Default: jenkins-admin
 
   KeyName:
     Description: Name of an existing EC2 Keypair
@@ -86,7 +86,7 @@ Resources:
       SecurityGroupIds: [!Ref SecurityGroup]
       SubnetId: !Ref Subnet
       BlockDeviceMappings: 
-          - DeviceName: /dev/xvda1
+          - DeviceName: /dev/xvda
             Ebs: 
               VolumeType: gp2
               VolumeSize: 100
