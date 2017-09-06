@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Single EC2 ubuntu instance for running a Jenkins server. Installs EC2 SSM agent.
+
+Parameters:
+  Subnet:
+    Description: The subnet to launch into. Defaults to shared services private subnet dedicated to Jenkins instances.
+    Type: String
+    Default: subnet-a1c39dc8
+
+  VPC:
+    Description: The VPC to launch into. Defaults to shared services VPC.
+    Type: String
+    Default: vpc-19f53370
+
+  InstanceAMI:
+    Description: The AMI to use. Defaults to us-east-2 Ubuntu 16.04 64-bit
+    Type: String
+    Default: ami-10547475
+
+  InstanceProfile:
+    Description: The ARN of the IAM role (instance profile) to assign to the instance. Defaults to the jenkins-admin role in the shared services account.
+    Type: String
+    Default: arn:aws:iam::416811316833:role/jenkins-admin
+
+  KeyName:
+    Description: Name of an existing EC2 Keypair
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair within this region.
+
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.large
+
+  Environment:
+    Type: String
+    Default: 'Test'
+    AllowedValues:
+      - 'Test'
+      - 'Production'
+
+  Owner:
+    Type: String
+    Default: 'cloudoperations@northwestern.edu'
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH access from all NU
+      SecurityGroupIngress:
+        - CidrIp: "129.105.0.0/16"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: "165.124.0.0/16"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: "10.0.0.0/8"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join [ '-', [ !Ref 'AWS::StackName', 'security-group' ] ]
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Application
+          Value: Cloudbees Jenkins
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref InstanceAMI
+      KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds: [!Ref SecurityGroup]
+      SubnetId: !Ref Subnet
+      BlockDeviceMappings: 
+          - DeviceName: /dev/xvda1
+            Ebs: 
+              VolumeType: gp2
+              VolumeSize: 100
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          cd /tmp			
+          /usr/bin/wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+          /usr/bin/sudo /usr/bin/dpkg -i amazon-ssm-agent.deb
+          /usr/bin/sudo /bin/systemctl enable amazon-ssm-agent
+      Tags:
+        - Key: Name
+          Value: !Join [ '-', [ !Ref 'AWS::StackName', 'instance' ] ]
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Application
+          Value: Cloudbees Jenkins
