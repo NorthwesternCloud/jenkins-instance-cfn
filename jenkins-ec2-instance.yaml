@@ -121,7 +121,4 @@ Resources:
         - Key: Application
           Value: Cloudbees Jenkins
 
-      Outputs:
-        InstanceID:
-          Description: The Instance ID
-          Value: Ref Instance
+  
