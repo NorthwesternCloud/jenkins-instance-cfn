@@ -110,6 +110,7 @@ Resources:
           /usr/bin/wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
           /usr/bin/sudo /usr/bin/dpkg -i amazon-ssm-agent.deb
           /usr/bin/sudo /bin/systemctl enable amazon-ssm-agent
+          /usr/bin/sudo apt-get install ansible -y
       Tags:
         - Key: Name
           Value: !Join [ '-', [ !Ref 'AWS::StackName', 'instance' ] ]
