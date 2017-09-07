@@ -51,7 +51,7 @@ Resources:
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow SSH access from all NU
+      GroupDescription: Allow SSH and Jenkins web access from all NU
       SecurityGroupIngress:
         - CidrIp: "129.105.0.0/16"
           FromPort: 22
@@ -65,6 +65,19 @@ Resources:
           FromPort: 22
           ToPort: 22
           IpProtocol: tcp
+        - CidrIp: "129.105.0.0/16"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
+        - CidrIp: "165.124.0.0/16"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
+        - CidrIp: "10.0.0.0/8"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
+
       VpcId: !Ref VPC
       Tags:
         - Key: Name
@@ -85,15 +98,15 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       SecurityGroupIds: [!Ref SecurityGroup]
       SubnetId: !Ref Subnet
-      BlockDeviceMappings: 
+      BlockDeviceMappings:
           - DeviceName: /dev/xvda
-            Ebs: 
+            Ebs:
               VolumeType: gp2
               VolumeSize: 100
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          cd /tmp			
+          cd /tmp
           /usr/bin/wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
           /usr/bin/sudo /usr/bin/dpkg -i amazon-ssm-agent.deb
           /usr/bin/sudo /bin/systemctl enable amazon-ssm-agent
