@@ -124,4 +124,4 @@ Resources:
       Outputs:
         InstanceID:
           Description: The Instance ID
-          Value: !Ref Instance
+          Value: Ref Instance
