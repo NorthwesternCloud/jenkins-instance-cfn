@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Single EC2 ubuntu instance for running a Jenkins server. Installs EC2 SSM agent.
+Description: Single EC2 CentOS instance for running a Jenkins server. Installs EC2 SSM agent.
 
 Parameters:
   Subnet:
@@ -8,15 +8,20 @@ Parameters:
     Type: String
     Default: subnet-a1c39dc8
 
+  AvailabilityZone:
+    Description: The availability zone to launch into. Defaults to same AZ as shared services private subnet dedicated to Jenkins instances.
+    Type: String
+    Default: us-east-2a
+
   VPC:
     Description: The VPC to launch into. Defaults to shared services VPC.
     Type: String
     Default: vpc-19f53370
 
   InstanceAMI:
-    Description: The AMI to use. Defaults to us-east-2 Ubuntu 16.04 64-bit
+    Description: The AMI to use. Defaults to us-east-2 CentOS 7 64-bit
     Type: String
-    Default: ami-10547475
+    Default: ami-9cbf9bf9
 
   InstanceProfile:
     Description: The name of the IAM role (instance profile) to assign to the instance. Defaults to the jenkins-admin role in the shared services account.
@@ -89,6 +94,21 @@ Resources:
         - Key: Application
           Value: Cloudbees Jenkins
 
+  Volume:
+    Type: AWS::EC2::Volume
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone
+      Size: 100
+      Tags:
+        - Key: Name
+          Value: !Join [ '-', [ !Ref 'AWS::StackName', 'volume' ] ]
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Application
+          Value: Cloudbees Jenkins
+
   Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -98,19 +118,16 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       SecurityGroupIds: [!Ref SecurityGroup]
       SubnetId: !Ref Subnet
-      BlockDeviceMappings:
-          - DeviceName: /dev/xvda
-            Ebs:
-              VolumeType: gp2
-              VolumeSize: 100
+      Volumes:
+        - Device: xvdb
+          VolumeId: !Ref Volume
       UserData:
         Fn::Base64: !Sub |
-          #!/bin/bash -xe
+          #!/bin/bash -x
           cd /tmp
-          /usr/bin/wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
-          /usr/bin/sudo /usr/bin/dpkg -i amazon-ssm-agent.deb
-          /usr/bin/sudo /bin/systemctl enable amazon-ssm-agent
-          /usr/bin/sudo /usr/bin/apt-get install -y ansible
+          sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+          sudo systemctl start amazon-ssm-agent
+          sudo yum install -y ansible
 
       Tags:
         - Key: Name
@@ -121,5 +138,3 @@ Resources:
           Value: !Ref Owner
         - Key: Application
           Value: Cloudbees Jenkins
-
-  
