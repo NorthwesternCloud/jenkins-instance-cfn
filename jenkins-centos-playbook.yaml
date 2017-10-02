@@ -1,0 +1,25 @@
+---
+- hosts: all
+  become: true
+  become_method: su
+  tasks:
+   - name: Add repository
+     yum_repository:
+        name: cjt
+        description: CloudBees Jenkins Team YUM repo
+        baseurl: https://downloads.cloudbees.com/cjt/rolling/rpm/cjt.repo
+   - rpm_key:
+      state: present
+      key: https://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0x38E2F5F39FF90BDA
+   - name: upgrade all packages
+     yum:
+       name: '*'
+       state: latest
+   - name: install the latest version of JDK
+     yum:
+       name: java-1.8.0-openjdk
+       state: latest    
+   - name: install the latest version of CJT
+     yum:
+       name: cjt
+       state: latest
