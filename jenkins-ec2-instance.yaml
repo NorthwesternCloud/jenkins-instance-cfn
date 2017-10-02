@@ -66,7 +66,15 @@ Resources:
           FromPort: 22
           ToPort: 22
           IpProtocol: tcp
-        - CidrIp: "10.0.0.0/8"
+        - CidrIp: "10.101.0.0/16"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: "10.102.0.0/15"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: "10.105.0.0/16"
           FromPort: 22
           ToPort: 22
           IpProtocol: tcp
@@ -93,22 +101,7 @@ Resources:
           Value: !Ref Owner
         - Key: Application
           Value: Cloudbees Jenkins
-
-  Volume:
-    Type: AWS::EC2::Volume
-    Properties:
-      AvailabilityZone: !Ref AvailabilityZone
-      Size: 100
-      Tags:
-        - Key: Name
-          Value: !Join [ '-', [ !Ref 'AWS::StackName', 'volume' ] ]
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Owner
-          Value: !Ref Owner
-        - Key: Application
-          Value: Cloudbees Jenkins
-
+ 
   Instance:
     Type: AWS::EC2::Instance
     Properties:
@@ -118,9 +111,12 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       SecurityGroupIds: [!Ref SecurityGroup]
       SubnetId: !Ref Subnet
-      Volumes:
-        - Device: xvdb
-          VolumeId: !Ref Volume
+      BlockDeviceMappings:
+        -
+          DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 100
+            
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -x
