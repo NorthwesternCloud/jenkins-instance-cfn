@@ -1,0 +1,18 @@
+---
+- hosts: all
+  become: true
+  become_method: su
+  tasks:
+   - name: add repo
+     shell: echo "deb https://downloads.cloudbees.com/cjt/rolling/debian binary/" > /etc/apt/sources.list.d/cloudbees.list
+   - name: add CloudBees GPG key
+     command: apt-key adv --keyserver keyserver.ubuntu.com --recv 38E2F5F39FF90BDA
+   - name: update
+     apt:
+      update_cache: yes
+   - name: install jdk
+     apt:
+      name: openjdk-8-jre
+   - name: install cjt
+     apt:
+      name: cjt
