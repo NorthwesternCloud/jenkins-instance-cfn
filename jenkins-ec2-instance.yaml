@@ -86,11 +86,18 @@ Resources:
           FromPort: 8080
           ToPort: 8080
           IpProtocol: tcp
-        - CidrIp: "10.0.0.0/8"
+        - CidrIp: "10.101.0.0/16"
           FromPort: 8080
           ToPort: 8080
           IpProtocol: tcp
-
+        - CidrIp: "10.102.0.0/15"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
+        - CidrIp: "10.105.0.0/16"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
       VpcId: !Ref VPC
       Tags:
         - Key: Name
@@ -115,7 +122,7 @@ Resources:
         -
           DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: 100
+            VolumeSize: 92
             
       UserData:
         Fn::Base64: !Sub |
