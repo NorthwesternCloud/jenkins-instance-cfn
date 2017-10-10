@@ -39,6 +39,7 @@ Parameters:
     Default: t2.micro
     AllowedValues:
       - t2.micro
+      - t2.small
       - t2.large
 
   Environment:
@@ -135,6 +136,11 @@ Resources:
           sudo yum install -y ansible
           sudo sh -c "echo 'preserve_hostname: true' >> /etc/cloud/cloud.cfg"
           sudo hostnamectl set-hostname --static ${AWS::StackName}.jenkins.northwestern.edu
+          PUB_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+          echo "update delete ${AWS::StackName}.jenkins.northwestern.edu A" >> /home/centos/ddns2.txt
+          echo "update add ${AWS::StackName}.jenkins.northwestern.edu 360 A $PUB_IP" >> /home/centos/ddns2.txt
+          echo "send" >> /home/centos/ddns2.txt
+          nsupdate /home/centos/ddns2.txt
 
       Tags:
         - Key: Name
