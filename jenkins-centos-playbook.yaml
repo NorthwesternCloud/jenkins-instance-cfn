@@ -20,10 +20,3 @@
      yum:
        name: cjt
        state: latest
-       # PULLED NSUPDATE Module lines, will work at user-data
-  # - name: Add or modify hostname.jenkins.northwestern.edu A to 10.28.129.128/28"
-  #   nsupdate:
-   #   server: "129.105.49.1"
-    #  zone: "jenkins.northwestern.edu"
-    #  record: "jpw-test-7"
-     # value: "10.28.129.132"
