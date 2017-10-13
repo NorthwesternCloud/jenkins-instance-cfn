@@ -1,0 +1,165 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Single EC2 CentOS instance for running a CloudBees Jenkins Team server. Installs EC2 SSM agent, Ansible and Docker-CE
+
+Parameters:
+  Subnet:
+    Description: The subnet to launch into. Defaults to shared services private subnet dedicated to Jenkins instances.
+    Type: String
+    Default: subnet-a1c39dc8
+
+  AvailabilityZone:
+    Description: The availability zone to launch into. Defaults to same AZ as shared services private subnet dedicated to Jenkins instances.
+    Type: String
+    Default: us-east-2a
+
+  VPC:
+    Description: The VPC to launch into. Defaults to shared services VPC.
+    Type: String
+    Default: vpc-19f53370
+
+  InstanceAMI:
+    Description: The AMI to use. Defaults to us-east-2 CentOS 7 64-bit
+    Type: String
+    Default: ami-9cbf9bf9
+
+  InstanceProfile:
+    Description: The name of the IAM role (instance profile) to assign to the instance. Defaults to the jenkins-admin role in the shared services account.
+    Type: String
+    Default: jenkins-admin
+
+  KeyName:
+    Description: Name of an existing EC2 Keypair
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair within this region.
+
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.small
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.large
+
+  Environment:
+    Type: String
+    Default: 'Production'
+    AllowedValues:
+      - 'Test'
+      - 'Production'
+
+  Owner:
+    Type: String
+    Default: 'cloudoperations@northwestern.edu'
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and Jenkins web access from all NU
+      SecurityGroupIngress:
+        - CidrIp: "129.105.0.0/16"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: "165.124.0.0/16"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: "10.101.0.0/16"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: "10.102.0.0/15"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: "10.105.0.0/16"
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: "129.105.0.0/16"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
+        - CidrIp: "165.124.0.0/16"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
+        - CidrIp: "10.101.0.0/16"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
+        - CidrIp: "10.102.0.0/15"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
+        - CidrIp: "10.105.0.0/16"
+          FromPort: 8080
+          ToPort: 8080
+          IpProtocol: tcp
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Join [ '-', [ !Ref 'AWS::StackName', 'security-group' ] ]
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Application
+          Value: Cloudbees Jenkins
+ 
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref InstanceAMI
+      KeyName: !Ref KeyName
+      IamInstanceProfile: !Ref InstanceProfile
+      SecurityGroupIds: [!Ref SecurityGroup]
+      SubnetId: !Ref Subnet
+      BlockDeviceMappings:
+        -
+          DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: 92
+            
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -x
+          cd /tmp
+          sudo yum install -y wget
+          sudo yum install -y bind-utils && sudo yum install -y unzip
+          sudo yum install java-1.8.0-openjdk -y
+          sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
+          sudo systemctl start amazon-ssm-agent && sudo systemctl enable amazon-ssm-agent
+          sudo yum install -y ansible
+          sudo wget -O /etc/yum.repos.d/cjt.repo https://downloads.cloudbees.com/cjt/rolling/rpm/cjt.repo
+          sudo rpm --import "https://keyserver.ubuntu.com/pks/lookup?op=get&fingerprint=on&search=0x38E2F5F39FF90BDA"
+          sudo yum install -y yum-utils && sudo yum install -y device-mapper-persistent-data && sudo yum install -y lvm2
+          sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          sudo sh -c "echo 'preserve_hostname: true' >> /etc/cloud/cloud.cfg"
+          sudo hostnamectl set-hostname --static ${AWS::StackName}.jenkins.northwestern.edu
+          PUB_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+          echo "update delete ${AWS::StackName}.jenkins.northwestern.edu A" >> /home/centos/ddns2.txt
+          echo "update add ${AWS::StackName}.jenkins.northwestern.edu 360 A $PUB_IP" >> /home/centos/ddns2.txt
+          echo "send" >> /home/centos/ddns2.txt
+          nsupdate /home/centos/ddns2.txt
+          sudo yum update -y && sudo yum install -y cjt
+          sudo systemctl enable cjt && sudo systemctl start cjt
+          sudo yum install -y docker-ce
+          sudo systemctl enable docker && sudo systemctl start docker
+          sudo wget https://releases.hashicorp.com/terraform/0.10.7/terraform_0.10.7_linux_amd64.zip
+          sudo unzip terraform_0.10.7_linux_amd64.zip -d /usr/local/bin
+
+
+      Tags:
+        - Key: Name
+          Value: !Join [ '-', [ !Ref 'AWS::StackName', 'instance' ] ]
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: Application
+          Value: Cloudbees Jenkins Team
