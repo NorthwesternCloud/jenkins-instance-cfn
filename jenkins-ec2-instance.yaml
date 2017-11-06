@@ -51,7 +51,7 @@ Parameters:
 
   Owner:
     Type: String
-    Default: 'cloudoperations@northwestern.edu'
+    Default: 'awscloudops@northwestern.edu'
 
 Resources:
   SecurityGroup:
