@@ -131,7 +131,7 @@ Resources:
           cd /tmp
           sudo yum install -y wget
           sudo yum install -y bind-utils && sudo yum install -y unzip
-          sudo yum install java-1.8.0-openjdk -y
+          sudo yum install -y java-1.8.0-openjdk-devel
           sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm
           sudo systemctl start amazon-ssm-agent && sudo systemctl enable amazon-ssm-agent
           sudo yum install -y ansible
